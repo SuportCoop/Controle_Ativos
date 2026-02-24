@@ -1,0 +1,298 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Ativos | Cooperativa</title>
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body class="dark-theme">
+
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="brand">
+                <div class="logo-circle"><i class="fa-solid fa-boxes-stacked"></i></div>
+                <h2>CoopAssets</h2>
+            </div>
+
+            <ul class="nav-links">
+                <li class="active" data-target="dashboard-section"><i class="fa-solid fa-chart-pie"></i> Dashboard</li>
+                <li data-target="assets-section"><i class="fa-solid fa-laptop"></i> Ativos</li>
+                <li data-target="employees-section"><i class="fa-solid fa-users"></i> Funcionários</li>
+                <li data-target="assignments-section"><i class="fa-solid fa-handshake"></i> Empréstimos</li>
+                <li data-target="scan-section"><i class="fa-solid fa-qrcode"></i> Leitor QR</li>
+            </ul>
+
+            <div class="theme-toggle" id="theme-switch">
+                <i class="fa-solid fa-moon"></i>
+                <span>Modo Escuro</span>
+            </div>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+
+            <!-- Dashboard Section -->
+            <section id="dashboard-section" class="page-section active">
+                <header class="section-header">
+                    <h1>Visão Geral</h1>
+                    <p>Resumo dos ativos da cooperativa</p>
+                </header>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon blue"><i class="fa-solid fa-box"></i></div>
+                        <div class="stat-info">
+                            <h3>Total de Ativos</h3>
+                            <p id="total-assets">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green"><i class="fa-solid fa-check"></i></div>
+                        <div class="stat-info">
+                            <h3>Disponíveis</h3>
+                            <p id="available-assets">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon orange"><i class="fa-solid fa-user-lock"></i></div>
+                        <div class="stat-info">
+                            <h3>Em Uso</h3>
+                            <p id="inuse-assets">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon purple"><i class="fa-solid fa-users"></i></div>
+                        <div class="stat-info">
+                            <h3>Funcionários</h3>
+                            <p id="total-employees">0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="recent-activity">
+                    <h2>Últimas Movimentações</h2>
+                    <div class="table-container">
+                        <table id="recent-table">
+                            <thead>
+                                <tr>
+                                    <th>Ativo</th>
+                                    <th>Funcionário</th>
+                                    <th>Data</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- JS will populate this -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Assets Section -->
+            <section id="assets-section" class="page-section">
+                <header class="section-header flex-between">
+                    <div>
+                        <h1>Ativos</h1>
+                        <p>Gerenciamento do inventário</p>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="file" id="excel-file-input" style="display:none;" accept=".xlsx"
+                            onchange="uploadExcel(event)">
+                        <button class="btn secondary" onclick="handleImportClick()" title="Importar de Excel"><i
+                                class="fa-solid fa-file-import"></i></button>
+                        <button class="btn secondary" onclick="handleExportExcel()" title="Exportar para Excel"><i
+                                class="fa-solid fa-file-export"></i></button>
+                        <button class="btn primary" onclick="openModal('asset-modal')"><i class="fa-solid fa-plus"></i>
+                            Novo Ativo</button>
+                    </div>
+                </header>
+
+                <div class="search-bar">
+                    <i class="fa-solid fa-search"></i>
+                    <input type="text" id="search-asset" placeholder="Buscar ativo por nome ou código...">
+                </div>
+
+                <div class="cards-grid" id="assets-grid">
+                    <!-- JS will populate this -->
+                </div>
+            </section>
+
+            <!-- Employees Section -->
+            <section id="employees-section" class="page-section">
+                <header class="section-header flex-between">
+                    <div>
+                        <h1>Funcionários</h1>
+                        <p>Controle de colaboradores</p>
+                    </div>
+                    <button class="btn primary" onclick="openModal('employee-modal')"><i class="fa-solid fa-plus"></i>
+                        Novo Funcionário</button>
+                </header>
+
+                <div class="cards-grid" id="employees-grid">
+                    <!-- JS will populate this -->
+                </div>
+            </section>
+
+            <!-- Assignments Section -->
+            <section id="assignments-section" class="page-section">
+                <header class="section-header">
+                    <h1>Empréstimos</h1>
+                    <p>Vincular ativos a funcionários</p>
+                </header>
+
+                <div class="assignment-form form-panel glass-panel">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Selecione o Ativo (Disponíveis)</label>
+                            <select id="assign-asset-select">
+                                <option value="">-- Escolha um ativo --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Selecione o Funcionário</label>
+                            <select id="assign-employee-select">
+                                <option value="">-- Escolha um funcionário --</option>
+                            </select>
+                        </div>
+                        <div class="form-group align-bottom">
+                            <button class="btn primary full-width" onclick="assignAsset()">Vincular</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="active-assignments mt-4">
+                    <h2>Ativos In Use</h2>
+                    <div class="table-container">
+                        <table id="assignments-table">
+                            <thead>
+                                <tr>
+                                    <th>ID Ativo</th>
+                                    <th>Nome do Ativo</th>
+                                    <th>Funcionário</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- JS will populate this -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Scan Section -->
+            <section id="scan-section" class="page-section">
+                <header class="section-header">
+                    <h1>Leitor de Ativo</h1>
+                    <p>Simule a leitura do QR Code pelo ID</p>
+                </header>
+
+                <div class="scan-container">
+                    <div class="scan-box form-panel glass-panel">
+                        <i class="fa-solid fa-qrcode scan-icon"></i>
+                        <h3>Insira o ID do Ativo (Simulação de Leitura)</h3>
+                        <div class="scan-input-group">
+                            <input type="text" id="scan-input" placeholder="Ex: asset-1623490...">
+                            <button class="btn primary" onclick="scanAsset()"><i class="fa-solid fa-search"></i>
+                                Buscar</button>
+                        </div>
+                    </div>
+
+                    <div id="scan-result" class="scan-result hidden">
+                        <!-- JS vai mostrar o resultado aqui -->
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Modals -->
+
+    <!-- Add Asset Modal -->
+    <div class="modal-overlay" id="asset-modal">
+        <div class="modal glass-panel">
+            <div class="modal-header">
+                <h2>Cadastrar Ativo</h2>
+                <button class="close-btn" onclick="closeModal('asset-modal')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Nome / Equipamento</label>
+                    <input type="text" id="asset-name" placeholder="Ex: Notebook Dell Inspiron">
+                </div>
+                <div class="form-group">
+                    <label>Categoria</label>
+                    <select id="asset-category">
+                        <option value="Eletrônico">Eletrônico</option>
+                        <option value="Veículo">Veículo</option>
+                        <option value="Ferramenta">Ferramenta</option>
+                        <option value="Mobiliário">Mobiliário</option>
+                        <option value="Outros">Outros</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn secondary" onclick="closeModal('asset-modal')">Cancelar</button>
+                <button class="btn primary" onclick="saveAsset()">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Employee Modal -->
+    <div class="modal-overlay" id="employee-modal">
+        <div class="modal glass-panel">
+            <div class="modal-header">
+                <h2>Cadastrar Funcionário</h2>
+                <button class="close-btn" onclick="closeModal('employee-modal')"><i
+                        class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Nome Completo</label>
+                    <input type="text" id="employee-name" placeholder="Ex: João da Silva">
+                </div>
+                <div class="form-group">
+                    <label>Cargo / Setor</label>
+                    <input type="text" id="employee-role" placeholder="Ex: TI">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn secondary" onclick="closeModal('employee-modal')">Cancelar</button>
+                <button class="btn primary" onclick="saveEmployee()">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- View QR Modal -->
+    <div class="modal-overlay" id="qr-modal">
+        <div class="modal glass-panel qr-modal-content">
+            <div class="modal-header">
+                <h2>QR Code do Ativo</h2>
+                <button class="close-btn" onclick="closeModal('qr-modal')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body align-center">
+                <p>Escaneie ou copie o ID para ver quem está usando.</p>
+                <div id="qr-image-container" class="qr-box">
+                    <!-- QR Img -->
+                </div>
+                <p class="asset-id-display" id="qr-asset-id"></p>
+            </div>
+            <div class="modal-footer flex-center">
+                <button class="btn primary" onclick="downloadQR()">Baixar QR Code</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{% static 'script.js' %}"></script>
+</body>
+
+</html>
