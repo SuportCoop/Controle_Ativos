@@ -1,0 +1,35 @@
+# Entrega: Melhorias no Controle de Ativos
+
+Fizemos as alterações conforme solicitado para adicionar mais controle e flexibilidade à sua plataforma de Controle de Ativos, cobrindo tanto a versão web pura quanto o backend Django. 
+
+Aqui estão as novidades que já estão funcionando:
+
+## 1. Novos Campos e Edição de Ativos
+
+Agora, o cadastro de ativos está mais robusto:
+- Foram adicionados 3 novos campos: **Marca** (obrigatório), **Data de Entrega/Compra** (obrigatório) e **Número de Série** (opcional).
+- O leitor QR/Simulador de ID foi atualizado para **exibir todas essas informações na ficha do ativo**.
+- Adicionamos um **Botão de Editar** (<i class="fa-solid fa-pen"></i>) na listagem de ativos. Você pode clicar nele a qualquer momento para atualizar as especificações do equipamento (como marca, categoria, nome ou data).
+
+> [!TIP]
+> Mesmo que você tenha ativos antigos já cadastrados sem essas informações, ao visualizar ou editar eles irão mostrar como "Não informada", mantendo a retrocompatibilidade.
+
+## 2. Controle de Usuários do Sistema
+
+Criamos uma tela do zero para você gerenciar quem tem acesso ao sistema:
+- Adicionado um novo item no **Menu Lateral**: "Usuários do Sistema".
+- **Tela Exclusiva** para ver os usuários cadastrados e adicionar novos.
+- Cadastro completo com Nome, E-mail, Senha Provisória e um **Perfil de Acesso/Liberação** (Administrador, Operador ou Leitor).
+- Também há um contador de Usuários de Sistema no seu Dashboard principal.
+
+## Como Testar
+
+### Versão Web Pura (Local)
+1. Abra o arquivo `ControleAtivos/index.html` no seu navegador.
+2. Navegue pelo menu lateral para explorar a nova aba **Usuários do Sistema**.
+3. Vá na aba de **Ativos**, cadastre um novo e brinque com o **botão de editar**.
+4. Teste colocar a ID do ativo no **Leitor QR** para ver as novas informações na ficha!
+
+### Versão Django (Backend)
+1. Caso você use a versão com backend, você não perdeu nada: os campos foram criados no banco de dados.
+2. O servidor já foi atualizado (migrações aplicadas) para salvar Marca, Número de Série e Data de Entrega dos ativos, assim como os dados completos dos Usuários de Sistema.

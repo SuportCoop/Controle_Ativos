@@ -6,7 +6,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Controle de Ativos | Cooperativa</title>
-    <link rel="stylesheet" href="{% static 'style.css' %}">
+    <link rel="stylesheet" href="{% static 'style.css' %}?v=2.1">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -27,6 +27,7 @@
                 <li data-target="employees-section"><i class="fa-solid fa-users"></i> Funcionários</li>
                 <li data-target="assignments-section"><i class="fa-solid fa-handshake"></i> Empréstimos</li>
                 <li data-target="scan-section"><i class="fa-solid fa-qrcode"></i> Leitor QR</li>
+                <li data-target="access-section"><i class="fa-solid fa-shield-halved"></i> Config. Acessos</li>
             </ul>
 
             <div class="theme-toggle" id="theme-switch">
@@ -110,7 +111,7 @@
                                 class="fa-solid fa-file-import"></i></button>
                         <button class="btn secondary" onclick="handleExportExcel()" title="Exportar para Excel"><i
                                 class="fa-solid fa-file-export"></i></button>
-                        <button class="btn primary" onclick="openModal('asset-modal')"><i class="fa-solid fa-plus"></i>
+                        <button class="btn primary" onclick="openAssetModalNew()"><i class="fa-solid fa-plus"></i>
                             Novo Ativo</button>
                     </div>
                 </header>
@@ -162,6 +163,14 @@
                                 <option value="">-- Escolha um funcionário --</option>
                             </select>
                         </div>
+                        <div class="form-group" style="flex: 0.5;">
+                            <label>Termo Assinado?</label>
+                            <div style="display: flex; align-items: center; height: 44px; gap: 10px;">
+                                <input type="checkbox" id="assign-signed-term"
+                                    style="width: 20px; height: 20px; cursor: pointer;">
+                                <span style="font-size: 14px; color: var(--text-secondary);">Sim</span>
+                            </div>
+                        </div>
                         <div class="form-group align-bottom">
                             <button class="btn primary full-width" onclick="assignAsset()">Vincular</button>
                         </div>
@@ -177,6 +186,7 @@
                                     <th>ID Ativo</th>
                                     <th>Nome do Ativo</th>
                                     <th>Funcionário</th>
+                                    <th>Data de Empréstimo</th>
                                     <th>Ações</th>
                                 </tr>
                             </thead>
@@ -212,6 +222,57 @@
                 </div>
             </section>
 
+            <!-- Access Section Details -->
+            <section id="access-section" class="page-section">
+                <header class="section-header">
+                    <h1>Configurações de Acesso</h1>
+                    <p>Gestão de Usuários e Grupos com Autenticação Django</p>
+                </header>
+
+                <div class="actions-bar">
+                    <button class="btn primary" onclick="openModal('user-modal')">
+                        <i class="fa-solid fa-user-plus"></i> Novo Usuário Privilegiado
+                    </button>
+                    <button class="btn secondary" onclick="openModal('group-modal')">
+                        <i class="fa-solid fa-users-gear"></i> Novo Grupo
+                    </button>
+                </div>
+
+                <div class="table-container">
+                    <h3>Usuários Cadastrados (Login)</h3>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Usuário (Login)</th>
+                                <th>Email</th>
+                                <th>Grupos de Acesso</th>
+                                <th>Cadastrado em</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-table-body">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="table-container" style="margin-top: 30px;">
+                    <h3>Grupos de Acesso Disponíveis</h3>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Nome do Grupo</th>
+                                <th>Membros Ativos</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="groups-table-body">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
         </main>
     </div>
 
@@ -231,18 +292,102 @@
                 </div>
                 <div class="form-group">
                     <label>Categoria</label>
-                    <select id="asset-category">
-                        <option value="Eletrônico">Eletrônico</option>
+                    <select id="asset-category" onchange="toggleAssetFields()">
+                        <option value="Computador / Notebook">Computador / Notebook</option>
+                        <option value="Celular / Tablet">Celular / Tablet</option>
                         <option value="Veículo">Veículo</option>
                         <option value="Ferramenta">Ferramenta</option>
                         <option value="Mobiliário">Mobiliário</option>
                         <option value="Outros">Outros</option>
                     </select>
                 </div>
+
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label>Marca / Fabricante (Opcional)</label>
+                        <input type="text" id="asset-brand" placeholder="Ex: Dell, Samsung, Makita...">
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label>Condição no Cadastro</label>
+                        <select id="asset-condition" onchange="toggleAssetEntryDate()">
+                            <option value="Usado">Usado</option>
+                            <option value="Novo">Novo</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="container-entry-date" style="flex: 1; margin-bottom: 0; display: none;">
+                        <label>Data de Entrada / Compra</label>
+                        <input type="date" id="asset-entry-date" style="font-family: inherit;">
+                    </div>
+                </div>
+
+                <!-- Campos específicos para Computador -->
+                <div id="computer-fields"
+                    style="display: block; border-left: 2px solid var(--primary); padding-left: 10px; margin-bottom: 15px;">
+                    <div class="form-group">
+                        <label>Processador</label>
+                        <input type="text" id="asset-processor" placeholder="Ex: Intel Core i5 11ª Gen">
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <div class="form-group" style="flex: 1;">
+                            <label>Memória RAM</label>
+                            <input type="text" id="asset-ram" placeholder="Ex: 16GB">
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label>Armazenamento (SSD/HD)</label>
+                            <input type="text" id="asset-storage" placeholder="Ex: SSD 512GB">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Campos específicos para Celular -->
+                <div id="phone-fields"
+                    style="display: none; border-left: 2px solid var(--secondary); padding-left: 10px; margin-bottom: 15px;">
+                    <div class="form-group">
+                        <label>Número do IMEI</label>
+                        <input type="text" id="asset-imei" placeholder="Ex: 351234567890123">
+                    </div>
+                    <div class="form-group">
+                        <label>Linha Telefônica (Número)</label>
+                        <input type="text" id="asset-phone" placeholder="Ex: (11) 98765-4321">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Observações</label>
+                    <textarea id="asset-observation" placeholder="Ex: Tela possui um pequeno arranhão"
+                        style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-primary); font-family: inherit; font-size: 14px; min-height: 60px;"></textarea>
+                </div>
+
             </div>
             <div class="modal-footer">
                 <button class="btn secondary" onclick="closeModal('asset-modal')">Cancelar</button>
                 <button class="btn primary" onclick="saveAsset()">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Return Asset Modal -->
+    <div class="modal-overlay" id="return-modal">
+        <div class="modal glass-panel">
+            <div class="modal-header">
+                <h2>Confirmar Devolução</h2>
+                <button class="close-btn" onclick="closeModal('return-modal')"><i
+                        class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body align-center">
+                <p>Por favor, informe a data em que o ativo está sendo devolvido ao inventário.</p>
+                <div class="form-group" style="margin-top: 15px; text-align: left;">
+                    <label>Data da Devolução</label>
+                    <input type="date" id="return-date" style="font-family: inherit;">
+                    <input type="hidden" id="return-asg-id">
+                </div>
+            </div>
+            <div class="modal-footer flex-center">
+                <button class="btn secondary" onclick="closeModal('return-modal')">Cancelar</button>
+                <button class="btn primary" onclick="confirmReturnAsset()">Concluir Devolução</button>
             </div>
         </div>
     </div>
@@ -261,8 +406,25 @@
                     <input type="text" id="employee-name" placeholder="Ex: João da Silva">
                 </div>
                 <div class="form-group">
-                    <label>Cargo / Setor</label>
-                    <input type="text" id="employee-role" placeholder="Ex: TI">
+                    <label>Matrícula / ID</label>
+                    <input type="text" id="employee-matricula" placeholder="Ex: 12345">
+                </div>
+                <div class="form-group">
+                    <label>Departamento</label>
+                    <select id="employee-department">
+                        <option value="Operações">Operações</option>
+                        <option value="Administrativo">Administrativo</option>
+                        <option value="Financeiro">Financeiro</option>
+                        <option value="Recursos Humanos">Recursos Humanos</option>
+                        <option value="Tecnologia (TI)">Tecnologia (TI)</option>
+                        <option value="Comercial">Comercial</option>
+                        <option value="Logística">Logística</option>
+                        <option value="Outros">Outros</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Cargo / Setor (Opcional)</label>
+                    <input type="text" id="employee-role" placeholder="Ex: Assistente">
                 </div>
             </div>
             <div class="modal-footer">
@@ -292,7 +454,64 @@
         </div>
     </div>
 
-    <script src="{% static 'script.js' %}"></script>
+    <!-- Add User Modal -->
+    <div class="modal-overlay" id="user-modal">
+        <div class="modal glass-panel">
+            <div class="modal-header">
+                <h2>Criar Usuário de Acesso</h2>
+                <button class="close-btn" onclick="closeModal('user-modal')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Login (Username)</label>
+                    <input type="text" id="user-username" placeholder="Ex: joao.silva">
+                </div>
+                <div class="form-group">
+                    <label>E-mail (Opcional)</label>
+                    <input type="email" id="user-email" placeholder="Ex: joao@empresa.com">
+                </div>
+                <div class="form-group">
+                    <label>Senha Provisória</label>
+                    <input type="password" id="user-password" placeholder="Digite uma senha">
+                </div>
+                <div class="form-group">
+                    <label>Grupo de Acesso</label>
+                    <select id="user-group">
+                        <option value="">Sem Grupo / Padrão</option>
+                        <!-- Options generated by JS -->
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn secondary" onclick="closeModal('user-modal')">Cancelar</button>
+                <button class="btn primary" onclick="saveUser()">Gravar Acesso</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Group Modal -->
+    <div class="modal-overlay" id="group-modal">
+        <div class="modal glass-panel">
+            <div class="modal-header">
+                <h2>Criar Grupo de Segurança</h2>
+                <button class="close-btn" onclick="closeModal('group-modal')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Nome do Grupo</label>
+                    <input type="text" id="group-name" placeholder="Ex: Administradores, TI, RH...">
+                </div>
+                <p style="font-size: 11px; opacity: 0.7; margin-top: 10px;">Atribuir este grupo a usuários lhes
+                    concederá os privilégios nativos definidos no Admin do Django.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn secondary" onclick="closeModal('group-modal')">Cancelar</button>
+                <button class="btn primary" onclick="saveGroup()">Criar Grupo</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{% static 'script.js' %}?v=2.2"></script>
 </body>
 
 </html>

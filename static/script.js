@@ -2,12 +2,15 @@
 let assets = [];
 let employees = [];
 let assignments = [];
+let systemUsers = [];
+let accessGroups = [];
 
 // Inicialização
 document.addEventListener('DOMContentLoaded', async () => {
     initNavigation();
     initTheme();
     await fetchData();
+    await fetchAuthData();
 });
 
 // Busca os dados da API Django
@@ -31,6 +34,136 @@ async function fetchData() {
     } catch (error) {
         console.error("Erro ao buscar dados da API:", error);
     }
+}
+
+async function fetchAuthData() {
+    try {
+        const [resUsers, resGroups] = await Promise.all([
+            fetch('/api/users/'),
+            fetch('/api/groups/')
+        ]);
+
+        systemUsers = await resUsers.json();
+        accessGroups = await resGroups.json();
+
+        renderUsers();
+        renderGroups();
+        populateGroupSelect();
+    } catch (error) {
+        console.error("Erro ao carregar dados de autenticação:", error);
+    }
+}
+
+// Renderizando Usuários
+function renderUsers() {
+    const tbody = document.getElementById('users-table-body');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    systemUsers.forEach(u => {
+        const groupsHtml = u.groups && u.groups.length > 0
+            ? u.groups.map(g => `<span class="badge in-use" style="background:var(--primary); color:white; border-color:var(--primary)">${g}</span>`).join(' ')
+            : `<span class="badge available">Sem Grupo</span>`;
+
+        tbody.innerHTML += `
+            <tr>
+                <td><i class="fa-solid fa-user" style="color:var(--primary); margin-right:5px"></i> ${u.username}</td>
+                <td>${u.email || '-'}</td>
+                <td>${groupsHtml}</td>
+                <td>${u.date_joined}</td>
+                <td>
+                    <button class="icon-btn danger" onclick="deleteUser('${u.id}')" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+                </td>
+            </tr>
+        `;
+    });
+}
+
+function renderGroups() {
+    const tbody = document.getElementById('groups-table-body');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    accessGroups.forEach(g => {
+        tbody.innerHTML += `
+            <tr>
+                <td><strong>${g.name}</strong></td>
+                <td>${g.user_count} usuários</td>
+                <td>
+                    <button class="icon-btn danger" onclick="deleteGroup('${g.id}')" title="Excluir Grupo"><i class="fa-solid fa-trash"></i></button>
+                </td>
+            </tr>
+        `;
+    });
+}
+
+function populateGroupSelect() {
+    const sel = document.getElementById('user-group');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">Sem Grupo / Padrão</option>';
+    accessGroups.forEach(g => {
+        sel.innerHTML += `<option value="${g.name}">${g.name}</option>`;
+    });
+}
+
+async function saveUser() {
+    const username = document.getElementById('user-username').value;
+    const email = document.getElementById('user-email').value;
+    const password = document.getElementById('user-password').value;
+    const group = document.getElementById('user-group').value;
+
+    if (!username || !password) return alert('Username e Senha são obrigatórios!');
+
+    const res = await fetch('/api/users/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, email, password, group })
+    });
+
+    if (res.ok) {
+        document.getElementById('user-username').value = '';
+        document.getElementById('user-email').value = '';
+        document.getElementById('user-password').value = '';
+        closeModal('user-modal');
+        await fetchAuthData();
+    } else {
+        const d = await res.json();
+        alert(d.error || 'Erro ao salvar usuário');
+    }
+}
+
+async function deleteUser(id) {
+    if (!confirm('Certeza que deseja excluir este usuário de acesso?')) return;
+    const res = await fetch('/api/users/' + id + '/', { method: 'DELETE' });
+    if (res.ok) await fetchAuthData();
+    else { const d = await res.json(); alert(d.error); }
+}
+
+async function saveGroup() {
+    const name = document.getElementById('group-name').value;
+    if (!name) return alert('Nome do grupo é obrigatório!');
+
+    const res = await fetch('/api/groups/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+    });
+
+    if (res.ok) {
+        document.getElementById('group-name').value = '';
+        closeModal('group-modal');
+        await fetchAuthData();
+    } else {
+        const d = await res.json();
+        alert(d.error || 'Erro ao criar grupo');
+    }
+}
+
+async function deleteGroup(id) {
+    if (!confirm('Certeza que deseja excluir este grupo de acesso? (Usuários perderão esses privilégios)')) return;
+    const res = await fetch('/api/groups/' + id + '/', { method: 'DELETE' });
+    if (res.ok) await fetchAuthData();
+    else alert('Erro ao excluir matriz de grupo');
 }
 
 // Navegação (SPA simples)
@@ -83,20 +216,118 @@ function getAssetStatus(assetId) {
     return assign ? 'in-use' : 'available';
 }
 
+function toggleAssetFields() {
+    const category = document.getElementById('asset-category').value;
+    const procFields = document.getElementById('computer-fields');
+    const phoneFields = document.getElementById('phone-fields');
+
+    procFields.style.display = 'none';
+    phoneFields.style.display = 'none';
+
+    if (category === 'Computador / Notebook') {
+        procFields.style.display = 'block';
+    } else if (category === 'Celular / Tablet') {
+        phoneFields.style.display = 'block';
+    }
+}
+
+function toggleAssetEntryDate() {
+    const condition = document.getElementById('asset-condition').value;
+    const dateContainer = document.getElementById('container-entry-date');
+    if (condition === 'Novo') {
+        dateContainer.style.display = 'block';
+    } else {
+        dateContainer.style.display = 'none';
+        document.getElementById('asset-entry-date').value = '';
+    }
+}
+
+let currentEditingAssetId = null;
+
+function openAssetModalNew() {
+    currentEditingAssetId = null;
+    document.querySelector('#asset-modal h2').textContent = 'Cadastrar Ativo';
+
+    document.getElementById('asset-name').value = '';
+    document.getElementById('asset-category').value = 'Computador / Notebook';
+    document.getElementById('asset-brand').value = '';
+    document.getElementById('asset-condition').value = 'Usado';
+    document.getElementById('asset-entry-date').value = '';
+
+    document.getElementById('asset-processor').value = '';
+    document.getElementById('asset-ram').value = '';
+    document.getElementById('asset-storage').value = '';
+    document.getElementById('asset-imei').value = '';
+    document.getElementById('asset-phone').value = '';
+    document.getElementById('asset-observation').value = '';
+
+    toggleAssetFields();
+    toggleAssetEntryDate();
+    openModal('asset-modal');
+}
+
+function editAsset(id) {
+    const asset = assets.find(a => a.id === id);
+    if (!asset) return;
+
+    currentEditingAssetId = id;
+    document.querySelector('#asset-modal h2').textContent = 'Editar Ativo';
+
+    document.getElementById('asset-name').value = asset.name || '';
+    document.getElementById('asset-category').value = asset.category || 'Computador / Notebook';
+    document.getElementById('asset-brand').value = asset.brand || '';
+    document.getElementById('asset-condition').value = asset.condition || 'Usado';
+
+    if (asset.entry_date) {
+        document.getElementById('asset-entry-date').value = asset.entry_date;
+    } else {
+        document.getElementById('asset-entry-date').value = '';
+    }
+
+    document.getElementById('asset-processor').value = asset.processor || '';
+    document.getElementById('asset-ram').value = asset.ram_memory || '';
+    document.getElementById('asset-storage').value = asset.storage || '';
+    document.getElementById('asset-imei').value = asset.imei || '';
+    document.getElementById('asset-phone').value = asset.phone_number || '';
+    document.getElementById('asset-observation').value = asset.observation || '';
+
+    toggleAssetFields();
+    toggleAssetEntryDate();
+    openModal('asset-modal');
+}
+
 async function saveAsset() {
     const name = document.getElementById('asset-name').value;
     const category = document.getElementById('asset-category').value;
 
+    const processor = document.getElementById('asset-processor').value;
+    const ram_memory = document.getElementById('asset-ram').value;
+    const storage = document.getElementById('asset-storage').value;
+    const imei = document.getElementById('asset-imei').value;
+    const phone_number = document.getElementById('asset-phone').value;
+    const observation = document.getElementById('asset-observation').value;
+
+    // Novidades
+    const brand = document.getElementById('asset-brand').value;
+    const condition = document.getElementById('asset-condition').value;
+    const entry_date = document.getElementById('asset-entry-date').value;
+
     if (!name) return alert('Preencha o nome do ativo!');
 
-    const response = await fetch('/api/assets/', {
-        method: 'POST',
+    const url = currentEditingAssetId ? `/api/assets/${currentEditingAssetId}/update/` : '/api/assets/';
+    const method = currentEditingAssetId ? 'PUT' : 'POST';
+
+    const response = await fetch(url, {
+        method: method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, category })
+        body: JSON.stringify({
+            name, category, processor, ram_memory, storage, imei, phone_number, observation,
+            brand, condition, entry_date
+        })
     });
 
     if (response.ok) {
-        document.getElementById('asset-name').value = '';
+        currentEditingAssetId = null;
         closeModal('asset-modal');
         await fetchData();
     } else {
@@ -130,7 +361,10 @@ function renderAssets() {
                     <button class="btn secondary" onclick="showQR('${asset.id}')">
                         <i class="fa-solid fa-qrcode"></i> Ver QR Code
                     </button>
-                    <button class="icon-btn" onclick="deleteAsset('${asset.id}')" title="Excluir">
+                    <button class="icon-btn" onclick="editAsset('${asset.id}')" title="Editar">
+                        <i class="fa-solid fa-pen"></i>
+                    </button>
+                    <button class="icon-btn danger" onclick="deleteAsset('${asset.id}')" title="Excluir">
                         <i class="fa-solid fa-trash"></i>
                     </button>
                 </div>
@@ -158,6 +392,8 @@ async function deleteAsset(id) {
 
 async function saveEmployee() {
     const name = document.getElementById('employee-name').value;
+    const matricula = document.getElementById('employee-matricula').value;
+    const department = document.getElementById('employee-department').value;
     const role = document.getElementById('employee-role').value;
 
     if (!name) return alert('Preencha o nome!');
@@ -165,11 +401,18 @@ async function saveEmployee() {
     const response = await fetch('/api/employees/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, role: role || 'Sem Setor' })
+        body: JSON.stringify({
+            name,
+            matricula: matricula || '',
+            department: department || '',
+            role: role || 'Sem Setor'
+        })
     });
 
     if (response.ok) {
         document.getElementById('employee-name').value = '';
+        document.getElementById('employee-matricula').value = '';
+        document.getElementById('employee-department').value = '';
         document.getElementById('employee-role').value = '';
         closeModal('employee-modal');
         await fetchData();
@@ -188,7 +431,7 @@ function renderEmployees() {
                 <div class="card-header">
                     <div>
                         <h3 class="card-title">${emp.name}</h3>
-                        <p class="card-subtitle">${emp.role}</p>
+                        <p class="card-subtitle">${emp.department || emp.role} <br> <span style="font-size: 11px; opacity: 0.7">Matrícula: ${emp.matricula || '-'}</span></p>
                     </div>
                 </div>
                 <div class="card-body">
@@ -234,23 +477,26 @@ function populateSelects() {
     });
 
     employees.forEach(e => {
-        empSelect.innerHTML += `<option value="${e.id}">${e.name} - ${e.role}</option>`;
+        const info = [e.name, e.department, e.matricula].filter(Boolean).join(' - ');
+        empSelect.innerHTML += `<option value="${e.id}">${info}</option>`;
     });
 }
 
 async function assignAsset() {
     const assetId = document.getElementById('assign-asset-select').value;
     const empId = document.getElementById('assign-employee-select').value;
+    const signedTerm = document.getElementById('assign-signed-term').checked;
 
     if (!assetId || !empId) return alert('Selecione um ativo e um funcionário!');
 
     const response = await fetch('/api/assignments/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ assetId: assetId, employeeId: empId })
+        body: JSON.stringify({ assetId: assetId, employeeId: empId, signedTerm: signedTerm })
     });
 
     if (response.ok) {
+        document.getElementById('assign-signed-term').checked = false;
         alert('Ativo vinculado com sucesso!');
         await fetchData();
     } else {
@@ -258,12 +504,31 @@ async function assignAsset() {
     }
 }
 
-async function returnAsset(asgId) {
-    if (!confirm('Confirmar devolução do ativo?')) return;
+function openReturnModal(asgId) {
+    document.getElementById('return-asg-id').value = asgId;
+    document.getElementById('return-date').value = new Date().toISOString().split('T')[0];
+    openModal('return-modal');
+}
 
-    const response = await fetch(`/api/assignments/${asgId}/return/`, { method: 'POST' });
+async function confirmReturnAsset() {
+    const asgId = document.getElementById('return-asg-id').value;
+    const date = document.getElementById('return-date').value;
+
+    if (!asgId || !date) return alert('Selecione uma data válida.');
+
+    if (!confirm('Confirmar devolução com a data selecionada?')) return;
+
+    const response = await fetch(`/api/assignments/${asgId}/return/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ return_date: date })
+    });
+
     if (response.ok) {
+        closeModal('return-modal');
         await fetchData();
+    } else {
+        alert('Erro ao realizar a devolução do ativo.');
     }
 }
 
@@ -284,13 +549,21 @@ function renderAssignments() {
 
         if (!asset || !emp) return;
 
+        const termIcon = asg.signed_term
+            ? '<i class="fa-solid fa-file-signature" style="color: var(--success); font-size: 12px; margin-left: 5px;" title="Termo Assinado"></i>'
+            : '<i class="fa-solid fa-file-circle-xmark" style="color: var(--danger); font-size: 12px; margin-left: 5px;" title="Termo Pendente"></i>';
+
+        const dateObj = new Date(asg.date);
+        const dateStr = dateObj.toLocaleDateString('pt-BR');
+
         tbody.innerHTML += `
             <tr>
                 <td style="font-family: monospace; font-size: 11px;">...${asg.asset_id.slice(-6)}</td>
                 <td>${asset.name}</td>
-                <td>${emp.name}</td>
+                <td>${emp.name} ${termIcon}</td>
+                <td>${dateStr}</td>
                 <td>
-                    <button class="btn secondary" style="padding: 4px 8px; font-size: 12px" onclick="returnAsset('${asg.id}')">
+                    <button class="btn secondary" style="padding: 4px 8px; font-size: 12px" onclick="openReturnModal('${asg.id}')">
                         <i class="fa-solid fa-undo"></i> Devolver
                     </button>
                 </td>
@@ -331,12 +604,14 @@ function updateDashboard() {
 
         const badge = r.status === 'active'
             ? `<span class="badge in-use">Emprestado</span>`
-            : `<span class="badge available">Devolvido</span>`;
+            : `<span class="badge available" title="Devolvido em ${r.return_date ? new Date(r.return_date).toLocaleDateString('pt-BR') : 'Data Indisponível'}">Devolvido</span>`;
+
+        const termIcon = r.signed_term ? '<i class="fa-solid fa-file-signature text-success" style="color:var(--success); font-size: 11px;" title="Termo OK"></i>' : '';
 
         recentTable.innerHTML += `
             <tr>
                 <td>${asset.name}</td>
-                <td>${emp.name}</td>
+                <td>${emp.name} ${termIcon}</td>
                 <td>${dateStr}</td>
                 <td>${badge}</td>
             </tr>
@@ -399,6 +674,40 @@ function scanAsset() {
 
     const isActive = assignments.find(a => a.asset_id === id && a.status === 'active');
 
+    let specsHtml = '';
+    if (asset.category === 'Computador / Notebook') {
+        if (asset.processor || asset.ram_memory || asset.storage) {
+            specsHtml = `
+            <div class="detail-item" style="background: var(--bg-color); padding: 10px; border-radius: 6px; margin-top: 5px;">
+                <span class="detail-label"><i class="fa-solid fa-microchip"></i> Especificações Hw</span>
+                <span class="detail-value" style="font-size: 13px;">
+                    ${asset.processor ? `Proc: <b>${asset.processor}</b><br>` : ''}
+                    ${asset.ram_memory ? `RAM: <b>${asset.ram_memory}</b><br>` : ''}
+                    ${asset.storage ? `Armazenamento: <b>${asset.storage}</b>` : ''}
+                </span>
+            </div>`;
+        }
+    } else if (asset.category === 'Celular / Tablet') {
+        if (asset.imei || asset.phone_number) {
+            specsHtml = `
+            <div class="detail-item" style="background: var(--bg-color); padding: 10px; border-radius: 6px; margin-top: 5px;">
+                <span class="detail-label"><i class="fa-solid fa-mobile-screen"></i> Dados Telecom</span>
+                <span class="detail-value" style="font-size: 13px;">
+                    ${asset.imei ? `IMEI: <b>${asset.imei}</b><br>` : ''}
+                    ${asset.phone_number ? `Linha: <b>${asset.phone_number}</b>` : ''}
+                </span>
+            </div>`;
+        }
+    }
+
+    if (asset.observation) {
+        specsHtml += `
+        <div class="detail-item" style="margin-top: 5px;">
+            <span class="detail-label"><i class="fa-solid fa-note-sticky"></i> Observações</span>
+            <span class="detail-value" style="font-size: 12px; color: var(--text-secondary);">${asset.observation}</span>
+        </div>`;
+    }
+
     let contentHtml = `
         <div class="result-card">
             <div class="result-header">
@@ -406,8 +715,13 @@ function scanAsset() {
                 <div class="result-details">
                     <div class="detail-item">
                         <span class="detail-label">Categoria</span>
-                        <span class="detail-value">${asset.category}</span>
+                        <span class="detail-value">${asset.category} ${asset.brand ? `(${asset.brand})` : ''}</span>
                     </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Condição</span>
+                        <span class="detail-value">${asset.condition || 'Usado'} ${asset.entry_date && asset.condition === 'Novo' ? `<span style="font-size:11px"><br>Comprado em ${new Date(asset.entry_date + "T12:00:00").toLocaleDateString('pt-BR')}</span>` : ''}</span>
+                    </div>
+                    ${specsHtml}
                 </div>
                 ${isActive
             ? '<span class="result-status status-inuse"><i class="fa-solid fa-lock"></i> Em Uso</span>'
@@ -419,6 +733,11 @@ function scanAsset() {
     if (isActive) {
         const emp = employees.find(e => e.id === isActive.employee_id);
         const dateObj = new Date(isActive.date);
+
+        const termStatus = isActive.signed_term
+            ? '<span style="color: var(--success);"><i class="fa-solid fa-check-circle"></i> Termo Assinado</span>'
+            : '<span style="color: var(--warning);"><i class="fa-solid fa-triangle-exclamation"></i> Assinatura Pendente</span>';
+
         contentHtml += `
             <div class="detail-item">
                 <span class="detail-label">Ficha do Responsável</span>
@@ -429,11 +748,12 @@ function scanAsset() {
                         </div>
                         <div>
                             <span style="font-size: 18px; font-weight: 600; display: block; color: var(--text-primary)">${emp.name}</span>
-                            <span style="font-size: 13px; color: var(--text-secondary)">${emp.role}</span>
+                            <span style="font-size: 13px; color: var(--text-secondary)">${emp.department || emp.role} | Mat: ${emp.matricula || 'N/A'}</span>
                         </div>
                     </div>
-                    <div style="margin-top: 15px; font-size: 13px; color: var(--text-secondary)">
-                        <i class="fa-solid fa-calendar"></i> Retirado em: ${dateObj.toLocaleString('pt-BR')}
+                    <div style="margin-top: 15px; font-size: 13px; color: var(--text-secondary); display: flex; flex-direction: column; gap: 5px;">
+                        <div><i class="fa-solid fa-calendar"></i> Retirado em: ${dateObj.toLocaleString('pt-BR')}</div>
+                        <div style="font-weight: 600;">${termStatus}</div>
                     </div>
                 </div>
             </div>

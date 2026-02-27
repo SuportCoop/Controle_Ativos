@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentação - Controle de Ativos</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2f81f7;
+            --dark: #0d1117;
+            --light: #ffffff;
+            --gray: #8b949e;
+            --bg-light: #f6f8fa;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #525659;
+            color: #24292f;
+        }
+
+        /* Estilo simulando folhas A4 na tela */
+        .page {
+            background: white;
+            width: 21cm;
+            min-height: 29.7cm;
+            display: block;
+            margin: 2cm auto;
+            padding: 2.5cm;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+            position: relative;
+            box-sizing: border-box;
+        }
+
+        /* Capa */
+        .cover {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            height: 24cm;
+            background: linear-gradient(135deg, #f6f8fa 0%, #ffffff 100%);
+            border-radius: 10px;
+            border: 1px solid #e1e4e8;
+        }
+
+        .cover-icon {
+            font-size: 80px;
+            color: var(--primary);
+            margin-bottom: 20px;
+            background: rgba(47, 129, 247, 0.1);
+            width: 150px;
+            height: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 40px;
+            box-shadow: 0 10px 30px rgba(47, 129, 247, 0.2);
+        }
+
+        .cover h1 {
+            font-size: 3rem;
+            color: var(--dark);
+            margin-bottom: 10px;
+            font-weight: 800;
+        }
+
+        .cover h2 {
+            font-size: 1.5rem;
+            color: var(--gray);
+            font-weight: 400;
+        }
+
+        .cover .tech-stack {
+            margin-top: 50px;
+            display: flex;
+            gap: 20px;
+            font-size: 30px;
+            color: var(--gray);
+        }
+
+        /* Conteúdo */
+        h1,
+        h2,
+        h3 {
+            color: var(--dark);
+            font-weight: 600;
+        }
+
+        h1 {
+            font-size: 28px;
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+
+        h2 {
+            font-size: 22px;
+            margin-top: 40px;
+            color: var(--primary);
+        }
+
+        h3 {
+            font-size: 18px;
+            margin-top: 25px;
+        }
+
+        p {
+            line-height: 1.6;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        .feature-box {
+            background: var(--bg-light);
+            border-left: 4px solid var(--primary);
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .code-block {
+            background: #161b22;
+            color: #c9d1d9;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 13px;
+        }
+
+        th,
+        td {
+            border: 1px solid #d0d7de;
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background: var(--bg-light);
+            color: var(--dark);
+        }
+
+        .image-placeholder {
+            width: 100%;
+            height: 250px;
+            background: linear-gradient(45deg, #e1e4e8, #f6f8fa);
+            border: 1px dashed #c0c6cc;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #8b949e;
+            margin: 20px 0;
+            font-size: 40px;
+        }
+
+        /* Botão flutuante para imprimir */
+        .print-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            font-size: 16px;
+            border-radius: 50px;
+            box-shadow: 0 5px 15px rgba(47, 129, 247, 0.4);
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            transition: 0.3s;
+            z-index: 1000;
+        }
+
+        .print-btn:hover {
+            background: #1f6feb;
+            transform: translateY(-3px);
+        }
+
+        /* Regras para Impressão PDF */
+        @media print {
+            body {
+                background: white;
+            }
+
+            .page {
+                margin: 0;
+                padding: 2cm;
+                box-shadow: none;
+                width: 100%;
+                break-after: page;
+            }
+
+            .print-btn {
+                display: none;
+            }
+
+            /* Não quebrar blocos no meio da folha */
+            h2,
+            h3,
+            .feature-box,
+            .code-block,
+            table {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <button class="print-btn" onclick="window.print()"><i class="fa-solid fa-file-pdf"></i> Salvar como PDF</button>
+
+    <!-- PÁGINA 1: CAPA -->
+    <div class="page">
+        <div class="cover">
+            <div class="cover-icon">
+                <i class="fa-solid fa-layer-group"></i>
+            </div>
+            <h1>CoopAssets</h1>
+            <h2>Documentação Técnica do Sistema</h2>
+            <p style="margin-top: 30px; color: #8b949e;">Cooperativa - Controle de Ativos e Inventário</p>
+
+            <div class="tech-stack">
+                <i class="fa-brands fa-python" title="Python"></i>
+                <i class="fa-brands fa-js" title="JavaScript"></i>
+                <i class="fa-brands fa-html5" title="HTML5"></i>
+                <i class="fa-brands fa-css3-alt" title="CSS3"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- PÁGINA 2: INTRODUÇÃO E ARQUITETURA -->
+    <div class="page">
+        <h1>1. Visão Geral do Sistema</h1>
+        <p>O <strong>CoopAssets</strong> é uma aplicação web voltada para o controle e rastreamento de equipamentos e
+            ativos de uma cooperativa. O sistema permite o cadastro de funcionários, o registro de objetos (notebooks,
+            veículos, ferramentas) e o controle exato de quem está com qual equipamento em determinado momento temporal.
+        </p>
+
+        <div class="image-placeholder"><i class="fa-solid fa-desktop"></i></div>
+        <p style="text-align: center; font-size: 12px; color: gray;">Figura 1: Dashboard interativo com Single Page
+            Application (SPA)</p>
+
+        <h2>Arquitetura e Tecnologia</h2>
+        <p>O sistema foi migrado de uma estrutura local estática para uma arquitetura Cliente-Servidor robusta,
+            utilizando as seguintes tecnologias:</p>
+
+        <table style="margin-top: 15px;">
+            <tr>
+                <th width="30%">Camada</th>
+                <th>Tecnologia / Detalhes</th>
+            </tr>
+            <tr>
+                <td><strong>Backend (Servidor)</strong></td>
+                <td>Python 3 e Django Framework. Responsável por expor as APIs REST, lidar com segurança e processar
+                    planilhas Excel.</td>
+            </tr>
+            <tr>
+                <td><strong>Banco de Dados</strong></td>
+                <td>SQLite3 conectado nativamente ao ORM do Django. Garante a integridade e proteção estruturada dos
+                    dados.</td>
+            </tr>
+            <tr>
+                <td><strong>Frontend (Cliente)</strong></td>
+                <td>HTML5, CSS3 Customizado (Glassmorphism) e Vanilla JavaScript (Fetch API) operando em modelo SPA
+                    (página única).</td>
+            </tr>
+        </table>
+
+        <h2>A Revolução do Fetch()</h2>
+        <div class="feature-box">
+            <strong>O que mudou?</strong> Antes os dados ficavam limitados ao seu navegador (LocalStorage). Agora, o
+            JavaScript opera como um "consumidor remoto". Ao clicar em um botão, o Javascript congela, faz um
+            <code>await fetch('/api/assets')</code> mandando um pacote para o Python. O Python trabalha com o Banco de
+            dados e devolve tudo limpo em formato JSON instantaneamente. Isso permite múltiplas máquinas usarem o
+            sistema simultaneamente.
+        </div>
+    </div>
+
+    <!-- PÁGINA 3: MODELOS DE DADOS E APIS -->
+    <div class="page">
+        <h1>2. Banco de Dados e APIs</h1>
+
+        <h2>Modelos de Dados (Models)</h2>
+        <p>A estrutura de dados relacional (SQL) foi desenhada com três tabelas principais dentro do arquivo
+            <code>models.py</code>.</p>
+
+        <ul>
+            <li><strong>Asset (Ativos):</strong> Guarda o nome, a categoria e gera um ID único criptográfico aleatório
+                (ex: <i>asset-1628...</i>) toda vez que é criado. Esse ID alimenta a geração de QR Codes.</li>
+            <li><strong>Employee (Funcionários):</strong> Guarda o nome e o setor/cargo.</li>
+            <li><strong>Assignment (Empréstimos):</strong> A tabela pivô mais importante. É ela que possui uma Chave
+                Estrangeira (ForeignKey) para o Funcionário e outra para o Ativo. Ela possui um status que indica se o
+                empréstimo está <code>active</code> (Pessoa usando) ou se já foi <code>returned</code> (Devolvido para a
+                gaveta).</li>
+        </ul>
+
+        <h2>Estrutura Endpoint API Base</h2>
+        <p>As rotas configuradas no <code>views.py</code> trabalham de forma fluida dependendo do verbo HTTP da
+            requisição:</p>
+
+        <div class="code-block">
+            GET /api/assets/ -> Retorna a lista de todos os ativos em JSON
+            POST /api/assets/ -> Salva um novo ativo no banco recebendo JSON
+            DELETE /api/assets/&lt;id&gt; -> Exclui um ativo (Bloqueia se estiver 'Em Uso')
+
+            POST /api/assignments/ -> Cria um link 'active' entre Ativo e Funcionário
+            POST /api/assignments/&lt;id&gt;/return/ -> Muda o status do empréstimo para 'returned'
+        </div>
+    </div>
+
+    <!-- PÁGINA 4: RECURSOS AVANÇADOS -->
+    <div class="page">
+        <h1>3. Recursos Avançados</h1>
+
+        <h2>3.1. Importação e Exportação (Excel)</h2>
+        <p>O sistema utiliza a biblioteca <strong>Openpyxl</strong> sob demanda para lidar com grandes massas de dados
+            com o pacote Office.</p>
+
+        <div class="feature-box">
+            <h3 style="margin-top: 0; color: #dbab0a;">Exportar (.xlsx)</h3>
+            <p style="margin-bottom: 0;">Ao requisitar <code>/api/export-excel/</code>, o Python cria um Workbook de
+                Excel "em memória" no servidor, laça e escreve todos os ativos com cabeçalho (Nome, Categoria, Status,
+                etc). Em seguida ele empacota no formato binário <code>application/vnd.openxmlformats</code> e envia
+                forçando o download no seu Microsoft Excel.</p>
+        </div>
+
+        <div class="feature-box">
+            <h3 style="margin-top: 0; color: #2ea043;">Importar (.xlsx)</h3>
+            <p style="margin-bottom: 0;">O front-end possui um input invisível mascarado pelo botão. Ao enviar a
+                planilha por POST formulário para a API <code>/api/import-excel/</code>, o Python abre a planilha
+                inteira, ignora as linhas vazias e cabeçalhos, e extrai todos os Nomes da Coluna B e Categorias da
+                Coluna C, varrendo o loop para salvar centenas de registros em dois segundos usando a classe Model.</p>
+        </div>
+
+        <h2>3.2. Gerador e Leitura de QR Code Automático</h2>
+        <p>O código QR não gasta memória da sua máquina gerando pesadas imagens em Base64. Utilizamos uma técnica
+            <i>Stateless</i>:</p>
+
+        <div class="code-block">
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${assetId}`;
+        </div>
+
+        <p>Ele entrega apenas o ID único para a placa de API Online que nos devolve instantaneamente um PNG enquadrado
+            com a margem correta. Ao simular na aba "Leitura" inserindo o ID na busca, o Python varre instantaneamente a
+            tabela Assignment procurando o "Ativo=X" com o Status "Active" e retorna a <strong>Ficha Cadastral da
+                pessoa</strong> portadora e a data exata em sua mão.</p>
+
+        <div style="text-align: center; margin-top: 60px; color: #8b949e; font-size: 13px;">
+            <p>Gerado automaticamente para o projeto CoopAssets</p>
+        </div>
+    </div>
+
+</body>
+
+</html>
