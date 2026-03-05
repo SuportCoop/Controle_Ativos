@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="{% static 'style.css' %}?v=2.1">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 </head>
 
 <body class="dark-theme">
@@ -208,9 +209,29 @@
                 <div class="scan-container">
                     <div class="scan-box form-panel glass-panel">
                         <i class="fa-solid fa-qrcode scan-icon"></i>
-                        <h3>Insira o ID do Ativo (Simulação de Leitura)</h3>
-                        <div class="scan-input-group">
-                            <input type="text" id="scan-input" placeholder="Ex: asset-1623490...">
+                        <h3>Leitura de QR Code</h3>
+                        <p style="margin-bottom: 20px; font-size: 14px; color: var(--text-secondary);">Escolha se quer
+                            digitar o ID manualmente ou usar a câmera do dispositivo.</p>
+
+                        <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 20px;">
+                            <button id="btn-start-camera" class="btn primary" onclick="startCameraScan()">
+                                <i class="fa-solid fa-camera"></i> Abrir Câmera
+                            </button>
+                            <button id="btn-stop-camera" class="btn secondary" style="display: none;"
+                                onclick="stopCameraScan()">
+                                <i class="fa-solid fa-stop"></i> Parar Câmera
+                            </button>
+                        </div>
+
+                        <div id="reader-container"
+                            style="display: none; border-radius: 8px; overflow: hidden; margin-bottom: 20px; border: 2px solid var(--primary); padding: 5px;">
+                            <!-- O video stream da câmera entrará aqui -->
+                            <div id="reader" style="width: 100%;"></div>
+                        </div>
+
+                        <div class="scan-input-group"
+                            style="border-top: 1px solid var(--border-color); padding-top: 20px; margin-top: 10px;">
+                            <input type="text" id="scan-input" placeholder="Ou digite o ID: asset-1623...">
                             <button class="btn primary" onclick="scanAsset()"><i class="fa-solid fa-search"></i>
                                 Buscar</button>
                         </div>
@@ -511,7 +532,7 @@
         </div>
     </div>
 
-    <script src="{% static 'script.js' %}?v=2.3"></script>
+    <script src="{% static 'script.js' %}?v=2.5"></script>
 </body>
 
 </html>

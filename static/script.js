@@ -11,6 +11,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     initTheme();
     await fetchData();
     await fetchAuthData();
+
+    // Auto-scan a partir de QR Code Externo
+    const urlParams = new URLSearchParams(window.location.search);
+    const scanId = urlParams.get('scan');
+    if (scanId) {
+        // Clicar no link de navegação para a tela do Scanner
+        const scanTab = document.querySelector('[data-target="scan-section"]');
+        if (scanTab) scanTab.click();
+
+        // Simular a busca
+        document.getElementById('scan-input').value = scanId;
+        scanAsset();
+    }
 });
 
 // Busca os dados da API Django
@@ -624,10 +637,11 @@ function updateDashboard() {
 function showQR(assetId) {
     const qrContainer = document.getElementById('qr-image-container');
     const idDisplay = document.getElementById('qr-asset-id');
-    
+
+    // Mágica do QR Code: Colocamos a URL completa (window.location.origin) passando o ?scan=
+    // Para funcionar em smartphones, o sistema web precisa ser acessado não por localhost, mas pelo IP da rede
     const fullAppUrl = window.location.origin + '/?scan=' + assetId;
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(fullAppUrl)}&margin=10`;
-    // const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${assetId}&margin=10`;
 
     qrContainer.innerHTML = `<img src="${qrUrl}" alt="QR Code do Ativo">`;
 
@@ -662,6 +676,58 @@ function downloadQR() {
         a.click();
         window.URL.revokeObjectURL(url);
     }).catch(err => alert('Erro ao baixar QR Code!'));
+}
+
+// --- Variável global para o Scanner de Câmera ---
+let html5QrCode;
+
+function startCameraScan() {
+    const readerContainer = document.getElementById('reader-container');
+    const btnStart = document.getElementById('btn-start-camera');
+    const btnStop = document.getElementById('btn-stop-camera');
+
+    readerContainer.style.display = 'block';
+    btnStart.style.display = 'none';
+    btnStop.style.display = 'inline-flex';
+
+    html5QrCode = new Html5Qrcode("reader");
+
+    const qrCodeSuccessCallback = (decodedText, decodedResult) => {
+        // Encontrou um QR Code! Parar a câmera e pesquisar o ID.
+        stopCameraScan();
+
+        // Se caso for a URL embutida com o "?scan=", nós extraímos só o código final (asset-...)
+        let targetId = decodedText;
+        if (decodedText.includes('scan=')) {
+            const urlObj = new URL(decodedText);
+            targetId = urlObj.searchParams.get('scan');
+        }
+
+        document.getElementById('scan-input').value = targetId;
+        scanAsset();
+    };
+
+    const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+    // Tentar acessar diretamente a câmera traseira de celulares
+    html5QrCode.start({ facingMode: "environment" }, config, qrCodeSuccessCallback)
+        .catch((err) => {
+            console.error("Erro ao abrir a câmera: ", err);
+            alert("Erro ao tentar acessar a câmera. Verifique as permissões de vídeo do seu navegador para este site.");
+            stopCameraScan();
+        });
+}
+
+function stopCameraScan() {
+    if (html5QrCode) {
+        html5QrCode.stop().then(() => {
+            document.getElementById('reader-container').style.display = 'none';
+            document.getElementById('btn-start-camera').style.display = 'inline-flex';
+            document.getElementById('btn-stop-camera').style.display = 'none';
+        }).catch((err) => {
+            console.error("Erro ao fechar a câmera.", err);
+        });
+    }
 }
 
 function scanAsset() {
