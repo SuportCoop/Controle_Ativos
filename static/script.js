@@ -628,7 +628,20 @@ function showQR(assetId) {
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${assetId}&margin=10`;
 
     qrContainer.innerHTML = `<img src="${qrUrl}" alt="QR Code do Ativo">`;
-    idDisplay.textContent = assetId;
+
+    // Buscar quem está usando o ativo atualmente
+    const activeAssignment = assignments.find(a => a.asset_id === assetId && a.status === 'active');
+
+    if (activeAssignment) {
+        const emp = employees.find(e => e.id === activeAssignment.employee_id);
+        if (emp) {
+            idDisplay.innerHTML = `<strong>Em uso por:</strong> ${emp.name} <br> <span style="font-size: 11px; opacity: 0.6; font-family: monospace;">${assetId}</span>`;
+        } else {
+            idDisplay.textContent = assetId;
+        }
+    } else {
+        idDisplay.innerHTML = `<strong style="color: var(--success);">Disponível no Estoque</strong> <br> <span style="font-size: 11px; opacity: 0.6; font-family: monospace;">${assetId}</span>`;
+    }
 
     openModal('qr-modal');
 }
