@@ -624,8 +624,10 @@ function updateDashboard() {
 function showQR(assetId) {
     const qrContainer = document.getElementById('qr-image-container');
     const idDisplay = document.getElementById('qr-asset-id');
-
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${assetId}&margin=10`;
+    
+    const fullAppUrl = window.location.origin + '/?scan=' + assetId;
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(fullAppUrl)}&margin=10`;
+    // const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${assetId}&margin=10`;
 
     qrContainer.innerHTML = `<img src="${qrUrl}" alt="QR Code do Ativo">`;
 
